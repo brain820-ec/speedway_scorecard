@@ -155,7 +155,8 @@ export class App {
   updateMatchMetadata(meta, autoLoadRosterIfTeamChanged = true) {
     const previousHome = this.currentMatch.homeTeamName;
     const previousAway = this.currentMatch.awayTeamName;
-    const previousTossChoice = this.currentMatch.tossChoice;
+    const previousHeat1Gates = this.currentMatch.heat1gates;
+    const previousHeat15Gates = this.currentMatch.heat15gates;
 
     this.currentMatch = {
       ...this.currentMatch,
@@ -191,19 +192,21 @@ export class App {
       }
     }
 
-    // If toss choice changed, recalculate gate allocations for all pending heats
-    if (meta.heat15gates && meta.heat15gates !== previousTossChoice) {
+    // If either gate toss changed, recalculate gate allocations (heats 1-14 use
+    // heat1gates, the nominated heat 15 uses heat15gates)
+    const heat1Changed = meta.heat1gates && meta.heat1gates !== previousHeat1Gates;
+    const heat15Changed = meta.heat15gates && meta.heat15gates !== previousHeat15Gates;
+    if (heat1Changed || heat15Changed) {
       this.currentMatch.heats.forEach((h) => {
-        if (!h.isNominated) {
-          const gates = getGateAssignment(h.heatNumber, this.currentMatch.heat1gates, meta.heat15gates);
-          h.riders.forEach((r) => {
-            if (r.team === 'home') {
-              r.gate = r.helmet === 'red' ? gates.home[0] : gates.home[1];
-            } else {
-              r.gate = r.helmet === 'white' ? gates.away[0] : gates.away[1];
-            }
-          });
-        }
+        if (h.isNominated ? !heat15Changed : !heat1Changed) return;
+        const gates = getGateAssignment(h.heatNumber, this.currentMatch.heat1gates, this.currentMatch.heat15gates);
+        h.riders.forEach((r) => {
+          if (r.team === 'home') {
+            r.gate = r.helmet === 'red' ? gates.home[0] : gates.home[1];
+          } else {
+            r.gate = r.helmet === 'white' ? gates.away[0] : gates.away[1];
+          }
+        });
       });
     }
 

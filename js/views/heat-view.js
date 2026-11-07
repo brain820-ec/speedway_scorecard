@@ -19,6 +19,7 @@ export class HeatView {
     if (heatNum >= 1 && heatNum <= 15) {
       this.currentHeatNumber = heatNum;
       this.render();
+      this.app.updateHeaderScoreboard();
       this.scrollPillIntoView(heatNum);
     }
   }
@@ -43,9 +44,13 @@ export class HeatView {
     const isFirstHeat = this.currentHeatNumber === 1;
     const isLastHeat = this.currentHeatNumber === 15;
 
-    // Check if tactical substitute is available for trailing team
-    const scoreDiff = Math.abs(match.homeScore - match.awayScore);
-    const trailingTeam = match.homeScore < match.awayScore ? 'home' : (match.awayScore < match.homeScore ? 'away' : null);
+    // Check if tactical substitute is available for trailing team, based on the
+    // score going into this heat (not the overall match total)
+    const prevHeat = match.heats.find((h) => h.heatNumber === this.currentHeatNumber - 1);
+    const homeBefore = prevHeat?.runningHomeScore ?? 0;
+    const awayBefore = prevHeat?.runningAwayScore ?? 0;
+    const scoreDiff = Math.abs(homeBefore - awayBefore);
+    const trailingTeam = homeBefore < awayBefore ? 'home' : (awayBefore < homeBefore ? 'away' : null);
     const isTacticalAllowed = scoreDiff >= 6 && this.currentHeatNumber >= 5 && this.currentHeatNumber <= 14;
 
     this.container.innerHTML = `
@@ -81,7 +86,7 @@ export class HeatView {
 
         <div class="text-xs text-muted mb-3 flex items-center justify-between">
           <span>${currentHeat.note || 'Standard Heat'}</span>
-          <span>Running: <strong>${currentHeat.runningHomeScore || match.homeScore} - ${currentHeat.runningAwayScore || match.awayScore}</strong></span>
+          <span>Running: <strong>${currentHeat.runningHomeScore ?? match.homeScore} - ${currentHeat.runningAwayScore ?? match.awayScore}</strong></span>
         </div>
 
         ${isTacticalAllowed && trailingTeam ? `
@@ -180,7 +185,7 @@ export class HeatView {
     return `
       <div class="gate-rider-row" data-rider-index="${idx}" data-helmet="${rider.helmet}">
         <!-- Helmet Color & Gate Number -->
-        <div class="helmet-badge ${helmetClass}" title=@Gate ${rider.gate}>
+        <div class="helmet-badge ${helmetClass}" title="Gate ${rider.gate}">
           <span>G${rider.gate}</span>
           <span class="helmet-gate-label">${helmetName.slice(0, 1)}</span>
         </div>

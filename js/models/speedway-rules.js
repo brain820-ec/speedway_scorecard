@@ -663,13 +663,13 @@ export function calculateMatchTotals(match) {
 
   calculatedHeats.forEach((h) => {
     h.riders.forEach((r) => {
-      if (r.gate && gateStats[r.gate]) {
+      // Only count rides that have actually been raced (a finishing position or an exclusion code)
+      const hasRidden = r.position !== null || !!r.exclusionCode;
+      if (hasRidden && r.gate && gateStats[r.gate]) {
         gateStats[r.gate].rides += 1;
-        if (r.points !== null) {
-          gateStats[r.gate].points += r.points;
-          if (r.position === 1) {
-            gateStats[r.gate].wins += 1;
-          }
+        gateStats[r.gate].points += r.points || 0;
+        if (r.position === 1) {
+          gateStats[r.gate].wins += 1;
         }
       }
     });
@@ -710,40 +710,19 @@ export function calculateRiderStats(roster, heats, teamKey) {
         if (entry.exclusionCode) {
           displayStr = entry.exclusionCode;
           exclusions += 1;
-        } else if (entry.position === 1) {
-          displayStr = '3';
-          totalPoints += 3;
-          firsts += 1;
-        } else if (entry.position === 2) {
-          if (entry.bonus > 0) {
-            displayStr = '2*';
-            totalBonus += 1;
-          } else {
-            displayStr = '2';
-          }
-          totalPoints += 2;
-          seconds += 1;
-        } else if (entry.position === 3) {
-          if (entry.bonus > 0) {
-            displayStr = '1*';
-            totalBonus += 1;
-          } else {
-            displayStr = '1';
-          }
-          totalPoints += 1;
-          thirds += 1;
-        } else if (entry.position === 4) {
-          displayStr = '0';
-          unplaced += 1;
-        } else if (entry.position === 1.5) {
-          displayStr = '2.5';
-          totalPoints += 2.5;
-        } else if (entry.position === 2.5) {
-          displayStr = '1.5';
-          totalPoints += 1.5;
-        } else if (entry.position === 3.5) {
-          displayStr = '0.5';
-          totalPoints += 0.5;
+        } else {
+          // Use the points already calculated for the heat so rider totals always
+          // agree with team totals (e.g. doubled tactical rides, dead heats).
+          const pts = entry.points || 0;
+          const bonus = entry.bonus > 0 ? 1 : 0;
+          totalPoints += pts;
+          totalBonus += bonus;
+          displayStr = `${pts}${bonus ? '*' : ''}`;
+
+          if (entry.position === 1) firsts += 1;
+          else if (entry.position === 2) seconds += 1;
+          else if (entry.position === 3) thirds += 1;
+          else if (entry.position === 4) unplaced += 1;
         }
 
         rides.push({
@@ -792,6 +771,6 @@ export const QUICK_RESULT_PRESETS = [
   { id: '3-3_home_win', label: '3 - 3', subtitle: 'Home 1st & 4th', home: [1, 4], away: [2, 3], badgeClass: 'bg-blue-600' },
   { id: '3-3_away_win', label: '3 - 3', subtitle: 'Away 1st & 4th', home: [2, 3], away: [1, 4], badgeClass: 'bg-blue-600' },
   { id: '2-4_away_1', label: '2 - 4', subtitle: 'Away 1 & 3', home: [2, 4], away: [1, 3], badgeClass: 'bg-amber-600' },
-  { id: '2-4_away_2', label: '2 - 4', subtitle: 'Away 1 & 2 (H 3 & 4)', home: [3, 4], away: [1, 2], badgeClass: 'bg-amber-600' },
+  { id: '2-4_away_2', label: '2 - 4', subtitle: 'Away 1 & 3 (Yellow 1st)', home: [2, 4], away: [3, 1], badgeClass: 'bg-amber-600' },
   { id: '1-5_away', label: '1 - 5', subtitle: 'Away Win', home: [3, 4], away: [1, 2], badgeClass: 'bg-rose-600' },
 ];

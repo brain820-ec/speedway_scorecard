@@ -3,7 +3,7 @@
  * Enables 100% offline match scoring at the stadium with cache-first asset delivery.
  */
 
-const CACHE_NAME = 'speedway-scorecard-v1.0.0';
+const CACHE_NAME = 'speedway-scorecard-v1.0.1';
 
 const ASSETS_TO_CACHE = [
   './',
